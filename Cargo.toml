@@ -3,8 +3,6 @@ name = "fs_consistency_tests"
 version = "0.1.0"
 edition = "2024"
 
-[dependencies]
-
 [dev-dependencies]
 async-channel = "2.3.1"
 async-fs = "2.1.2"
@@ -13,3 +11,4 @@ futures-util = "0.3.31"
 smol = "2.0.2"
 smol-potat = "1.1.2"
 tempfile = "3.20.0"
+tokio = { version = "1.45.1", features = ["fs", "io-util", "macros", "rt-multi-thread"] }
