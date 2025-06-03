@@ -28,10 +28,11 @@ mod tests {
         let read_task = smol::spawn(async move {
             let bytes = b"hello".as_slice();
             while let Ok(path) = path_rx.recv().await {
-                let mut f = async_fs::File::open(path).await.unwrap();
+                let mut f = async_fs::File::open(&path).await.unwrap();
                 let mut buf = Vec::with_capacity(5);
                 f.read_to_end(&mut buf).await.unwrap();
-                assert_eq!(bytes, buf);
+                assert_eq!(bytes, buf, "{path:?}");
+                async_fs::remove_file(&path).await.unwrap();
             }
         });
         write_task.await;
@@ -69,10 +70,11 @@ mod tests {
             let bytes = b"hello".as_slice();
             while let Ok(path) = path_rx.recv().await {
                 unblock(move || {
-                    let mut f = std::fs::File::open(path).unwrap();
+                    let mut f = std::fs::File::open(&path).unwrap();
                     let mut buf = Vec::with_capacity(5);
                     f.read_to_end(&mut buf).unwrap();
-                    assert_eq!(bytes, buf);
+                    assert_eq!(bytes, buf, "{path:?}");
+                    std::fs::remove_file(path).unwrap();
                 })
                 .await;
             }
@@ -106,10 +108,11 @@ mod tests {
         let read_task = tokio::spawn(async move {
             let bytes = b"hello".as_slice();
             while let Ok(path) = path_rx.recv().await {
-                let mut f = tokio::fs::File::open(path).await.unwrap();
+                let mut f = tokio::fs::File::open(&path).await.unwrap();
                 let mut buf = Vec::with_capacity(5);
                 f.read_to_end(&mut buf).await.unwrap();
-                assert_eq!(bytes, buf);
+                assert_eq!(bytes, buf, "{path:?}");
+                tokio::fs::remove_file(path).await.unwrap();
             }
         });
         write_task.await.unwrap();
@@ -134,10 +137,11 @@ mod tests {
             scope.spawn(move || {
                 for _ in 0..40_000 {
                     let path = path_rx.recv_blocking().unwrap();
-                    let mut f = std::fs::File::open(path).unwrap();
+                    let mut f = std::fs::File::open(&path).unwrap();
                     let mut buf = Vec::with_capacity(5);
                     f.read_to_end(&mut buf).unwrap();
-                    assert_eq!(bytes, buf);
+                    assert_eq!(bytes, buf, "{path:?}");
+                    std::fs::remove_file(path).unwrap();
                 }
             });
         });
@@ -173,7 +177,7 @@ mod tests {
             let writer_dir_ref = &writer_dir;
             let path_tx_ref = &path_tx;
             let bytes = b"hello".as_slice();
-            futures_util::stream::iter(0..400_000)
+            futures_util::stream::iter(0..4_000_000)
                 .for_each_concurrent(4, |i| async move {
                     let writer_dir = writer_dir_ref.clone();
                     let path_tx = path_tx_ref.clone();
@@ -191,10 +195,11 @@ mod tests {
         let read_task = smol::spawn(async move {
             let bytes = b"hello".as_slice();
             while let Ok(path) = path_rx.recv().await {
-                let mut f = async_fs::File::open(path).await.unwrap();
+                let mut f = async_fs::File::open(&path).await.unwrap();
                 let mut buf = Vec::with_capacity(5);
                 f.read_to_end(&mut buf).await.unwrap();
-                assert_eq!(bytes, buf);
+                assert_eq!(bytes, buf, "{path:?}");
+                std::fs::remove_file(&path).unwrap();
             }
         });
         write_task.await;
